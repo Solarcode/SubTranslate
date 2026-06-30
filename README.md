@@ -126,7 +126,8 @@ player for every container.
 - **Extract-only.** Only handles files that already carry a *text* subtitle track
   (SRT/ASS/mov_text/WebVTT). Image-based subs (PGS/VobSub from some Blu-ray rips) can't be
   translated and the script fails loud. Files with no subtitles at all are out of scope today —
-  auto-fetching them from OpenSubtitles is a planned feature ([ROADMAP.md](ROADMAP.md)).
+  fetching them from OpenSubtitles or generating them from the audio with Whisper are planned
+  features ([ROADMAP.md](ROADMAP.md)).
 - Cost ≈ **$0.002** per episode, ~85s wall-clock (flash-lite).
 - Degrades gracefully: a failed batch keeps the original text for that batch rather than
   aborting — you never lose the whole run to one hiccup.
@@ -143,8 +144,11 @@ the universal guarantee.
 
 ## Roadmap
 
-Planned: auto-fetch a source subtitle from **OpenSubtitles** when a file has no embedded track,
-then run it through the same translate → embed pipeline. Design notes in [ROADMAP.md](ROADMAP.md).
+Make it work on **any** video, even ones with no subtitles at all — a two-step fallback when no
+embedded track is found: (1) fetch a matching subtitle from **OpenSubtitles** (cut-verified by
+runtime/fps and auto-synced so you never get director's-cut or drifting subs), else (2) **generate
+one from the audio with Whisper** (local or cloud) — both in the source language and translated.
+Design notes in [ROADMAP.md](ROADMAP.md).
 
 ## License
 
