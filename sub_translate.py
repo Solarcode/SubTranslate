@@ -46,8 +46,11 @@ Options
 
 API key resolution order
 ------------------------
-    1. $OPENROUTER_API_KEY
-    2. OPENROUTER_API_KEY=... in a .env file in: CWD, this script's dir, or ~/.config/sub_translate.env
+    1. OPENROUTER_API_KEY constant pasted at the top of this file
+    2. $OPENROUTER_API_KEY env var
+    3. OPENROUTER_API_KEY=... in a .env file: CWD, this script's dir, or ~/.config/sub_translate.env
+    4. Interactive prompt — then offers to save it to ~/.config/sub_translate.env (chmod 600)
+       so it's never asked again.
 """
 
 from __future__ import annotations
@@ -155,6 +158,31 @@ def require_tools() -> None:
             die(f"{tool} not found on PATH. Install with: brew install ffmpeg")
 
 
+def _persist_api_key(key: str) -> None:
+    """Offer to save an interactively-entered key to ~/.config/sub_translate.env
+    (resolution path #3) so future runs pick it up automatically. Written 0600
+    since it holds a secret. Replaces an existing OPENROUTER_API_KEY line and
+    preserves any other lines in the file."""
+    cfg = Path.home() / ".config" / "sub_translate.env"
+    try:
+        resp = input(f"Save this key to {cfg} so you're not asked again? [Y/n]: ").strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        return
+    if resp in ("n", "no"):
+        return
+    try:
+        cfg.parent.mkdir(parents=True, exist_ok=True)
+        kept = []
+        if cfg.exists():
+            kept = [ln for ln in cfg.read_text().splitlines()
+                    if not ln.strip().startswith("OPENROUTER_API_KEY")]
+        cfg.write_text("\n".join(kept + [f"OPENROUTER_API_KEY={key}"]) + "\n")
+        os.chmod(cfg, 0o600)
+        print(f"  saved (chmod 600) → {cfg}. Future runs use it automatically.", file=sys.stderr)
+    except OSError as e:
+        print(f"  couldn't save key ({e}); it'll still work for this run.", file=sys.stderr)
+
+
 def load_api_key() -> str:
     # 1. in-script constant (paste your key at the top of this file)
     if OPENROUTER_API_KEY.strip():
@@ -185,8 +213,7 @@ def load_api_key() -> str:
         except (EOFError, KeyboardInterrupt):
             entered = ""
         if entered:
-            print("  tip: paste this into OPENROUTER_API_KEY at the top of the script "
-                  "to skip this prompt next time.", file=sys.stderr)
+            _persist_api_key(entered)   # offer to save so we don't ask again
             return entered
     die(
         "no OpenRouter API key. Paste it into OPENROUTER_API_KEY at the top of this\n"

@@ -40,7 +40,9 @@ hit wins):
 1. **Pasted into the script** — `OPENROUTER_API_KEY = "sk-or-v1-..."` at the top of `sub_translate.py`.
 2. `$OPENROUTER_API_KEY` in your shell.
 3. `OPENROUTER_API_KEY=...` in a `.env` (CWD / script dir) or `~/.config/sub_translate.env`.
-4. **Interactive prompt** — if none of the above are set, it asks you when you run it.
+4. **Interactive prompt** — if none of the above are set, it asks you when you run it, then
+   **offers to save it** to `~/.config/sub_translate.env` (written `chmod 600`) so you're never
+   asked again. Decline with `n` to keep it one-run-only.
 
 > Never commit your key. `.env` and `sub_translate.env` are gitignored; the in-script constant
 > ships blank.
