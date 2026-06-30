@@ -23,10 +23,10 @@ fall back to a dir that isn't on your PATH, it prints the one line to add. Overr
 Then, from anywhere:
 
 ```bash
-sub-translate "Rick.and.Morty.S09E01.mkv"
+sub-translate "Rick.and.Morty.S09E01.mkv" finnish
 ```
 
-(You can also just run `python3 sub_translate.py "file.mkv"` without installing.)
+(You can also just run `python3 sub_translate.py "file.mkv" finnish` without installing.)
 
 `mkvtoolnix` is recommended, not required: **VLC mishandles SRT muxed into MKV by ffmpeg**, so
 for `.mkv` output the tool uses `mkvmerge` to author the embed (VLC renders it reliably). Without
@@ -48,14 +48,17 @@ hit wins):
 ## Use
 
 ```bash
-sub-translate "Rick.and.Morty.S09E01.mkv"              # default: Colombian Spanish
-sub-translate --to finnish "Rick.and.Morty.S09E01.mkv" # any language
-sub-translate --to 'Brazilian Portuguese' "Movie.mp4"
+sub-translate "Rick.and.Morty.S09E01.mkv" finnish      # FILE LANGUAGE
+sub-translate finnish "Rick.and.Morty.S09E01.mkv"      # order doesn't matter
+sub-translate "Movie.mp4" 'Brazilian Portuguese'       # multi-word is fine
 ```
 
-Pick **any** target language with `--to` — a name (`--to finnish`, `--to "Mexican Spanish"`) or
-an ISO code (`--to fin`). Any language the model knows works; the built-in list just resolves the
-3-letter track tag (unmapped languages still translate — pass `--lang-code` to set the tag).
+Just give it the **file** and the **language**, in any order — there's no flag and no default
+language. The file is whichever argument exists on disk; the rest is the target language, so a
+multi-word language like `Brazilian Portuguese` works without worrying about order. The language
+can be a name (`finnish`, `"Mexican Spanish"`) or an ISO code (`fin`). Any language the model
+knows works; the built-in list just resolves the 3-letter track tag (unmapped languages still
+translate — pass `--lang-code` to set the tag).
 
 After a run, the source folder is left with **one finished file**:
 
@@ -91,8 +94,8 @@ player for every container.
 
 | flag | what |
 |---|---|
-| `--to NAME\|CODE` | **target language** — any name or ISO code (default: `Colombian Spanish`) |
-| `--list` | just show the subtitle tracks in the file and exit |
+| `FILE LANGUAGE` | positional, **any order** — the media file + the target language (name or ISO code). Required. |
+| `--list` | just show the subtitle tracks in the file and exit (no language needed) |
 | `-o out.mkv` | explicit output path |
 | `--src-lang spa` | translate FROM a different source track (default: `eng`) |
 | `--src-index 5` | pick the source track by index (see `--list`) |

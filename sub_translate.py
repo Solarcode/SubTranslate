@@ -14,18 +14,23 @@ Stdlib only — no `pip install`. Needs `ffmpeg`/`ffprobe` on PATH (brew install
 Usage
 -----
     export OPENROUTER_API_KEY=sk-or-...            # or put it in a .env (see below)
-    python3 sub_translate.py "Rick.and.Morty.S09E01.mkv"            # default: Colombian Spanish
-    python3 sub_translate.py --to finnish "Movie.mkv"              # any language
-    python3 sub_translate.py --to 'Brazilian Portuguese' "Movie.mkv"
+    python3 sub_translate.py "Movie.mkv" finnish              # FILE LANGUAGE
+    python3 sub_translate.py finnish "Movie.mkv"              # order doesn't matter
+    python3 sub_translate.py "Movie.mp4" 'Brazilian Portuguese'
 
-Output (next to the input): "Rick.and.Morty.S09E01_[ColombianSpanish_subs].mkv"
-with the translated track embedded + default. The original video + a backup
-sidecar .srt are moved into "<source-dir>/subtranslate/".
+The two positional args are the media FILE and the TARGET LANGUAGE, in any
+order — the file is whichever arg exists on disk, the rest is the language
+(so a multi-word language needs no special ordering). There is NO default
+language; you must name one.
+
+Output (next to the input): "Movie_[Finnish_subs].mkv" with the translated
+track embedded + default. The original video + a backup sidecar .srt are
+moved into "<source-dir>/subtranslate/".
 
 Options
 -------
+    FILE LANGUAGE            positional, any order — media file + target language (name or ISO code)
     -o, --output PATH        explicit output path (default: <stem>_[<Lang>_subs]<ext>)
-    --to NAME|CODE           TARGET language — any name or ISO code (default: "Colombian Spanish")
     --src-lang CODE          source subtitle language to translate FROM (default: eng)
     --src-index N            pick subtitle track by ffprobe index, overrides --src-lang
     --lang-name NAME         override the language name used in the prompt
@@ -476,14 +481,24 @@ def remux(src: Path, trans_srt: Path, out: Path, subs: list[SubStream],
 # ----------------------------------------------------------------------------- #
 
 def main() -> int:
-    p = argparse.ArgumentParser(description="Translate embedded subtitles and remux as default track.")
-    p.add_argument("input", type=Path, help="media file with an embedded subtitle track")
+    p = argparse.ArgumentParser(
+        description="Translate a video's embedded subtitles into another language and remux as the default track.",
+        epilog=(
+            "examples:\n"
+            "  sub-translate Movie.mkv finnish\n"
+            "  sub-translate finnish Movie.mkv              # order doesn't matter\n"
+            "  sub-translate \"Show.S01E01.mp4\" 'Brazilian Portuguese'\n"
+            "  sub-translate --list Movie.mkv               # just show the subtitle tracks\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p.add_argument("tokens", nargs="*", metavar="FILE LANGUAGE",
+                   help="the media file and the TARGET language, in any order. The language can be "
+                        "a name or ISO code (finnish / fin / 'Brazilian Portuguese'). Required — "
+                        "there is no default language.")
     p.add_argument("-o", "--output", type=Path, default=None)
     p.add_argument("--src-lang", default="eng", help="source subtitle language (default: eng)")
     p.add_argument("--src-index", type=int, default=None, help="pick subtitle track by index")
-    p.add_argument("--to", default="Colombian Spanish",
-                   help="TARGET language — a name or ISO code. Any language works: "
-                        "--to finnish, --to fin, --to 'Brazilian Portuguese' (default: 'Colombian Spanish')")
     p.add_argument("--lang-name", default=None, help="override the language NAME used in the prompt")
     p.add_argument("--lang-code", default=None, help="override the 3-letter ISO code stamped on the track")
     p.add_argument("--register", default="match the source's tone and formality; keep it natural and idiomatic")
@@ -503,20 +518,25 @@ def main() -> int:
     p.add_argument("--list", action="store_true", help="list subtitle tracks and exit")
     p.add_argument("--model", default=DEFAULT_MODEL)
     args = p.parse_args()
-
-    # Resolve target language: --to gives the prompt NAME + track CODE; explicit
-    # --lang-name / --lang-code override either piece.
-    res_name, res_code = resolve_language(args.to)
-    lang_name = args.lang_name or res_name
-    lang_code = args.lang_code or res_code or "und"
-    if res_code is None and not args.lang_code:
-        print(f"note: no ISO code known for '{lang_name}' — tagging the track 'und'. "
-              f"Pass --lang-code XXX to set it.")
-
     require_tools()
-    src: Path = args.input
-    if not src.is_file():
-        die(f"input not found: {src}")
+
+    # Positional args are FILE + LANGUAGE in any order. The media file is the one
+    # that exists on disk; everything else (joined) is the target language — so a
+    # multi-word language like "Brazilian Portuguese" works regardless of order or
+    # quoting. --list needs only the file; translation needs both.
+    tokens = args.tokens
+    files = [t for t in tokens if Path(t).is_file()]
+    if not files:
+        if not tokens:
+            die("usage: sub-translate FILE LANGUAGE   (order doesn't matter, "
+                "e.g. 'sub-translate Movie.mkv finnish')")
+        die(f"no existing media file among the arguments {tokens}. "
+            f"usage: sub-translate FILE LANGUAGE")
+    if len(files) > 1:
+        die(f"ambiguous — more than one argument is an existing file {files}; "
+            f"can't tell which is the video. Run them one at a time.")
+    src = Path(files[0])
+    language = " ".join(t for t in tokens if t != files[0]).strip()
 
     subs = probe_subs(src)
     if args.list or not subs:
@@ -528,6 +548,17 @@ def main() -> int:
             print(s.describe())
         if args.list:
             return 0
+
+    # Translation requires a target language — there is no default.
+    if not language:
+        die(f"no target language given. usage: sub-translate FILE LANGUAGE   "
+            f"(e.g. 'sub-translate \"{src.name}\" finnish')")
+    res_name, res_code = resolve_language(language)
+    lang_name = args.lang_name or res_name
+    lang_code = args.lang_code or res_code or "und"
+    if res_code is None and not args.lang_code:
+        print(f"note: no ISO code known for '{lang_name}' — tagging the track 'und'. "
+              f"Pass --lang-code XXX to set it.")
 
     chosen = choose_source(subs, args.src_lang, args.src_index)
     print(f"Source track: {chosen.describe().strip()}")

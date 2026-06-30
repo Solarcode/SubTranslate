@@ -8,13 +8,17 @@ track into a clean-named copy as the default subtitle, and moves the original + 
 ## Run
 
 ```bash
-python3 sub_translate.py "Some.Movie.mkv"            # default Colombian Spanish (or: sub-translate after ./install.sh)
-python3 sub_translate.py --to finnish "Movie.mkv"    # any language (name or ISO code)
-python3 sub_translate.py --list "file.mkv"           # show subtitle tracks, exit
+# FILE + LANGUAGE positional, ANY ORDER (no --to flag, no default language):
+python3 sub_translate.py "Movie.mkv" finnish         # or: sub-translate "Movie.mkv" finnish (after ./install.sh)
+python3 sub_translate.py finnish "Movie.mkv"         # order doesn't matter
+python3 sub_translate.py "Movie.mp4" 'Brazilian Portuguese'
+python3 sub_translate.py --list "file.mkv"           # show subtitle tracks, exit (no language needed)
 ```
 
-Output: `<name>_[<Language>_subs]<ext>` next to the input; original + sidecar moved to
-`subtranslate/` (`--no-archive` keeps them in place, `--archive-dir` changes the target).
+File = whichever positional exists on disk; the rest (joined) = the target language (name or ISO
+code). Language is REQUIRED — there is no default. Output: `<name>_[<Language>_subs]<ext>` next to
+the input; original + sidecar moved to `subtranslate/` (`--no-archive` keeps them in place,
+`--archive-dir` changes the target).
 
 ## Code rules
 
