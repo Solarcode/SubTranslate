@@ -122,7 +122,8 @@ player for every container.
 
 - **Extract-only.** Only handles files that already carry a *text* subtitle track
   (SRT/ASS/mov_text/WebVTT). Image-based subs (PGS/VobSub from some Blu-ray rips) can't be
-  translated and the script fails loud. Raw recordings with no subs are out of scope by design.
+  translated and the script fails loud. Files with no subtitles at all are out of scope today —
+  auto-fetching them from OpenSubtitles is a planned feature ([ROADMAP.md](ROADMAP.md)).
 - Cost ≈ **$0.002** per episode, ~85s wall-clock (flash-lite).
 - Degrades gracefully: a failed batch keeps the original text for that batch rather than
   aborting — you never lose the whole run to one hiccup.
@@ -136,6 +137,11 @@ correct, complete, and flagged `default`. The identical content authored with `m
 mkvtoolnix) renders reliably, and the same content as an external sidecar `.srt` always works.
 So: MKV embeds go through `mkvmerge`, everything else through ffmpeg, and the sidecar `.srt` is
 the universal guarantee.
+
+## Roadmap
+
+Planned: auto-fetch a source subtitle from **OpenSubtitles** when a file has no embedded track,
+then run it through the same translate → embed pipeline. Design notes in [ROADMAP.md](ROADMAP.md).
 
 ## License
 
