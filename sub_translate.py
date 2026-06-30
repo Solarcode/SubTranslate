@@ -113,7 +113,7 @@ for _n, _c in LANG_NAME_TO_CODE.items():
 
 
 def resolve_language(value: str) -> "tuple[str, str | None]":
-    """Map a user --to value (a language NAME or a 3-letter ISO code, optionally
+    """Map a user-supplied language value (a NAME or a 3-letter ISO code, optionally
     region-prefixed like 'Colombian Spanish') to (display_name, iso_code).
 
     iso_code is None when we can't resolve it — the caller warns and falls back
