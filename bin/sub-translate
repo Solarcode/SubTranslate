@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# sub-translate — PATH launcher for sub_translate.py
+#
+# Resolves its own location through symlinks (so `install.sh` can drop a symlink
+# anywhere on PATH and this still finds the real script), then execs the Python
+# tool with all args forwarded verbatim.
+#
+# Portable: works on macOS's default bash 3.2 (no `readlink -f` dependency).
+
+set -euo pipefail
+
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  case "$SOURCE" in
+    /*) ;;                       # absolute — use as-is
+    *) SOURCE="$DIR/$SOURCE" ;;  # relative — resolve against the symlink's dir
+  esac
+done
+BIN_DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
+REPO_DIR="$(cd -P "$BIN_DIR/.." >/dev/null 2>&1 && pwd)"
+
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "sub-translate: python3 not found on PATH" >&2
+  exit 1
+fi
+
+exec python3 "$REPO_DIR/sub_translate.py" "$@"

@@ -1,0 +1,14 @@
+# Defaults; extend per stack.
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+node_modules/
+.next/
+dist/
+build/
+.DS_Store
+
+# tool-specific local key file
+sub_translate.env
