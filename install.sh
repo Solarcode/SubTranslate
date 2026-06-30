@@ -64,9 +64,14 @@ echo "✓ linked $CMD_NAME → $LINK"
 if [ "$WARN_PATH" = "1" ]; then
   echo
   echo "⚠ $DEST_DIR is not on your PATH. Add it (then restart your shell):"
-  # zsh is macOS default; print the right profile file
-  PROFILE="$HOME/.zshrc"; [ -n "${BASH_VERSION:-}" ] && PROFILE="$HOME/.bashrc"
-  echo "    echo 'export PATH=\"$DEST_DIR:\$PATH\"' >> $PROFILE"
+  # Pick the profile + syntax for the user's actual login shell, not the shell
+  # running this script (its shebang is bash).
+  case "${SHELL##*/}" in
+    zsh)  echo "    echo 'export PATH=\"$DEST_DIR:\$PATH\"' >> $HOME/.zshrc" ;;
+    bash) echo "    echo 'export PATH=\"$DEST_DIR:\$PATH\"' >> $HOME/.bashrc" ;;
+    fish) echo "    fish_add_path $DEST_DIR" ;;
+    *)    echo "    echo 'export PATH=\"$DEST_DIR:\$PATH\"' >> $HOME/.profile" ;;
+  esac
 fi
 
 echo
